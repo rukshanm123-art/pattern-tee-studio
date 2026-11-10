@@ -191,7 +191,7 @@ input[type=range]{accent-color:var(--accent)}
           </div>
         </div>
       </div>
-      <div class="field"><label for="lightDir" style="font:500 12px var(--f-body);color:var(--muted)">Light from</label><input type="range" id="lightDir" min="-70" max="70" value="-32"></div>
+      <div class="field"><label for="lightDir" style="font:500 12px var(--f-body);color:var(--muted)">Light from</label><input type="range" id="lightDir" min="-70" max="70" value="-20"></div>
       <p class="note">Everything runs in your browser. Take a screenshot of the stage for product shots.</p>
     </section>
   </aside>
@@ -207,9 +207,9 @@ import * as THREE from 'three';
 const S = 15;                      // atlas pixels per cm
 const ATLAS = 2048, AW = ATLAS / S; // atlas is AW cm square
 const W = 60, L = 74;              // body piece flat width, length
-const NW = 9.5, NECK = { front: 10, back: 2.5 }, SH_DROP = 4.5;
+const NW = 9.5, NECK = { front: 10, back: 2.5 }, SH_DROP = 7.5;
 const A = 27.5, B = 11;            // body cross-section semi-axes
-const SL = { len: 24, cuff: 3, alpha: 33 * Math.PI / 180, ry0: 12.5, ry1: 10.5, rz0: 7.2, rz1: 6.6, cap: 4.5 };
+const SL = { len: 24, cuff: 3, alpha: 41 * Math.PI / 180, ry0: 12.5, ry1: 10.5, rz0: 7.2, rz1: 6.6, cap: 4.5 };
 const SHEET_H = 116;
 const capT = u => SL.cap * (1 - Math.sin(Math.PI * u));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -245,7 +245,8 @@ function bodyPos(px, py, side, out) {
   if (side === 'back') { x = -x; z = -z * 0.92; }
   return out.set(x, y, z);
 }
-const sleeveRoot = s => new THREE.Vector3(s * (A - 4.2), shoulderY(W / 2 + 25.8) - SL.ry0 - L * 0.56 - 0.6, 0);
+const SL_IN = 3.5; // sleeve tube starts this far inside the body so its open root never shows
+const sleeveRoot = s => new THREE.Vector3(s * (A - 4.2), shoulderY(W / 2 + 25.8) - SL.ry0 - L * 0.56 - 1.4, 0);
 function sleevePos(u, t, s, grow, out) {
   const ca = Math.cos(SL.alpha), sa = Math.sin(SL.alpha);
   const C = sleeveRoot(s);
@@ -467,7 +468,7 @@ function hitPrint(x, y) {
 }
 
 /* ---------- garment colours ---------- */
-const state = { body: '#f2f0eb', rib: '#7a1424', backdrop: '#2a2523', light: 'window', lightDir: -32, label: 'YOUR LOGO', size: 'XL', labelInk: '#7a1424' };
+const state = { body: '#f2f0eb', rib: '#7a1424', backdrop: '#2a2523', light: 'window', lightDir: -20, label: 'YOUR LOGO', size: 'XL', labelInk: '#7a1424' };
 
 let tex;
 const heatherPat = (() => { const c = mk(256, 256), x = c.getContext('2d'), r = rng(3); for (let i = 0; i < 7000; i++) { const v = r() < .5 ? 0 : 255; x.fillStyle = `rgba(${v},${v},${v},${0.015 + r() * 0.03})`; x.fillRect(r() * 256, r() * 256, 1 + r() * 3, 1); } return actx.createPattern(c, 'repeat'); })();
@@ -682,7 +683,7 @@ function sleeveBuilder(key) {
   const P = PIECES[key];
   return () => grid(72, 26, (u, v) => {
     const t = capT(u) + (SL.len - capT(u)) * v, ax = P.x + PW / 2 + (u - 0.5) * sCirc(t), ay = P.y + t;
-    sleevePos(u, t, P.s, 0, tmp); flatPos(ax, ay, tmpF);
+    sleevePos(u, -SL_IN + (SL.len + SL_IN) * v, P.s, 0, tmp); flatPos(ax, ay, tmpF);
     return { s: [tmp.x, tmp.y, tmp.z], f: [tmpF.x, tmpF.y, tmpF.z], uv: uvOf(ax, ay) };
   });
 }
@@ -698,7 +699,7 @@ const trims = new THREE.Group(); garment.add(trims);
   for (let i = 0; i <= 40; i++) { const px = W / 2 - NW + 2 * NW * i / 40; pts.push(bodyPos(px, topY(px, 'front') + 0.3, 'front', new THREE.Vector3())); }
   for (let i = 1; i < 40; i++) { const px = W / 2 + NW - 2 * NW * i / 40; pts.push(bodyPos(W - px, topY(W - px, 'back') + 0.3, 'back', new THREE.Vector3())); }
   const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
-  const N = 240, sp = curve.getSpacedPoints(N), bp = [], buv = [], bi = [], rows = [[0, 0, -0.35], [0.55, 1.05, 0.2], [1, 2.1, 0.05], [0.55, 2.0, -0.35]];
+  const N = 240, sp = curve.getSpacedPoints(N), bp = [], buv = [], bi = [], rows = [[0, -1.0, 0.3], [0.3, 0.1, 0.35], [0.65, 1.15, 0.3], [1, 2.1, 0.05], [0.65, 2.0, -0.35], [0.3, 0.5, -0.55]];
   for (let i = 0; i <= N; i++) { const P = sp[i % N], out = new THREE.Vector3(P.x, 0, P.z).normalize(); rows.forEach(([v, up, o]) => { bp.push(P.x + out.x * o, P.y + up, P.z + out.z * o); buv.push(i / N, v); }); }
   for (let i = 0; i < N; i++) for (let j = 0; j < rows.length - 1; j++) { const a = i * rows.length + j, b = (i + 1) * rows.length + j; bi.push(a, b, a + 1, b, b + 1, a + 1); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(buv, 2)); g.setIndex(bi); g.computeVertexNormals();
@@ -737,7 +738,7 @@ function drawLabel() {
 
 // backdrop + lights
 const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(900, 600), new THREE.MeshStandardMaterial({ color: state.backdrop, roughness: 1 }));
-backdrop.position.z = -62; backdrop.receiveShadow = true; scene.add(backdrop);
+backdrop.position.z = -95; backdrop.receiveShadow = true; scene.add(backdrop);
 const hemi = new THREE.HemisphereLight(0xfff4ec, 0x3a2a2c, 0.9); scene.add(hemi);
 const fill = new THREE.DirectionalLight(0xdfe6ff, 0.45); fill.position.set(160, 40, 120); scene.add(fill);
 const key = new THREE.SpotLight(0xfff1e2, 3.2, 0, 0.42, 0.35, 0);
@@ -750,7 +751,7 @@ const leaves = (() => { const c = mk(512, 512), x = c.getContext('2d'), r = rng(
 const blinds = (() => { const c = mk(512, 512), x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 512, 512); x.filter = 'blur(4px)'; x.save(); x.translate(256, 256); x.rotate(0.38); x.fillStyle = '#000'; for (let y = -500; y < 500; y += 52) x.fillRect(-500, y, 1000, 25); x.restore(); x.save(); x.translate(256, 256); x.rotate(0.06); x.fillStyle = '#000'; x.fillRect(-150, -400, 26, 800); x.fillRect(118, -400, 26, 800); x.restore(); const g = x.createRadialGradient(256, 256, 120, 256, 256, 280); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)'); x.filter = 'none'; x.fillStyle = g; x.fillRect(0, 0, 512, 512); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 function applyLight() {
   const a = state.lightDir * Math.PI / 180, R = 260;
-  key.position.set(Math.sin(a) * R, 150, Math.cos(a) * R);
+  key.position.set(Math.sin(a) * R, 95, Math.cos(a) * R);
   if (state.light !== 'studio') { key.map = state.light === 'leaves' ? leaves : blinds; key.angle = 0.45; key.penumbra = 0.3; key.intensity = state.light === 'leaves' ? 3.6 : 5.2; hemi.intensity = state.light === 'leaves' ? 1.0 : 0.7; fill.intensity = 0.4; }
   else { key.map = null; key.angle = 0.5; key.penumbra = 1; key.intensity = 2.4; hemi.intensity = 0.95; fill.intensity = 0.7; }
 }
