@@ -21,6 +21,8 @@ The **Load rose ringer** preset recreates a white ringer tee with red roses casc
 
 ## Run it
 
+**Live:** https://rukshanm123-art.github.io/pattern-tee-studio/ (deployed from `main` by the workflow in `.github/workflows/pages.yml`)
+
 It is a single static page with no build step. Open `index.html` in a browser, or serve the folder:
 
 ```sh
